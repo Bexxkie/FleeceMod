@@ -11,22 +11,21 @@ namespace FleeceMod
     [BepInPlugin(GUID, NAME, VERSION)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string LEGACY_GUID = "com.lily.goldenFleeceFix";   
+        public const string LEGACY_GUID = "com.lily.goldenFleeceFix";
         public const string GUID = "goldenFleeceFix";
         public const string NAME = "Golden Fleece Fix";
         public const string VERSION = "1.0";
 
-        private static ManualLogSource _log;
-        
+        public static ManualLogSource _log;
+
         public static ConfigEntry<float> IncrementValue;
         // INIT...
         private void Awake()
         {
             _log = new ManualLogSource("fleeceMod-Log");
             BepInEx.Logging.Logger.Sources.Add(_log);
-            
-            IncrementValue = Config.Bind("General", "IncDamage", 0.1f, "Set damage increase per kill");
 
+            IncrementValue = Config.Bind("General", "IncDamage", 0.1f, "Set damage increase per kill");
             // Apply all the patches
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
             _log.LogInfo($"Fleecemod loaded");
@@ -35,41 +34,20 @@ namespace FleeceMod
     }
     // --Patches--
     //  Golden fleece patch
-    [HarmonyPatch(typeof(PlayerFleeceManager),nameof(PlayerFleeceManager.IncrementDamageModifier))]
-    public class PlayerFleeceManagerPatch 
+    [HarmonyPatch(typeof(PlayerFleeceManager), nameof(PlayerFleeceManager.IncrementDamageModifier))]
+    public class PlayerFleeceManagerPatch
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            /*  //  if (DataManager.Instance.PlayerFleece == 1 && damageMultiplier < 2f)
-             *  
-             *      // DataManager.Instance.PlayerFleece == 1
-             * [0]  IL_0000: call class DataManager DataManager::get_Instance() 
-		     * [1]  IL_0005: ldfld int32 DataManager::PlayerFleece
-		     * [2]  IL_000a: ldc.i4.1
-		     * [3]  IL_000b: bne.un.s IL_003e
-             * 
-             *      // damageMultiplier < 2f
-             *      (THIS SECTION GETS REMOVED)
-		     * [4]  IL_000d: ldsfld float32 PlayerFleeceManager::damageMultiplier
-		     * [5]  IL_0012: ldc.r4 2
-		     * [6]  IL_0017: bge.un.s IL_003e
-             *     
-             * // damageMultiplier += 0.1f;
-             * [7]  IL_0019: ldsfld float32 PlayerFleeceManager::damageMultiplier
-             * [8]  IL_001e: ldc.r4 0.1 (THIS VALUE GETS MODIFIED)
-             * [9]  IL_0023: add
-             * [10] IL_0024: stsfld float32 PlayerFleeceManager::damageMultiplier
-             *            
-             */
+            Plugin._log.LogInfo($"Patching Golden fleece");
             float incDam = Plugin.IncrementValue.Value;
             return new CodeMatcher(instructions)
                 .Advance(offset: 4)                 // skip over 'DataManager.Instance.PlayerFleece == 1'
                 .RemoveInstructionsInRange(4, 6)    // remove 'damageMultiplier < 2f'
                 .Advance(offset: 2)                 // skip down to the next float declaration 
                 .Set(OpCodes.Ldc_R4, incDam)        // replace the +0.1f with our custom value
-                .InstructionEnumeration();
+                .InstructionEnumeration();        
         }
-
     }
     //  Next fleece patch goes here
 
@@ -94,6 +72,7 @@ namespace FleeceMod
     // Curse_dmg    - 2x curse damage 1/2 curse cost 1/2 weapon damage 1/2 HP
     //       - prop - pos - 
     //       - prop - neg - 
+
 
 }
 
